@@ -1,2 +1,2 @@
-# Re-react
+# Rereact
 React Created from scratch

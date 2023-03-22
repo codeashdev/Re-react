@@ -1,11 +1,20 @@
 import Rereact from "./src/Rereact/Rereact";
 
 /** @jsx Rereact.createElement */
+const container = document.getElementById("root")
 
-const element = (
-  <div>
-    <h1>Rereact</h1>
-  </div>
-);
-const container = document.getElementById("root");
-Rereact.render(element, container);
+const updateValue = e => {
+  rerender(e.target.value)
+}
+
+const rerender = value => {
+  const element = (
+    <div>
+      <input onInput={updateValue} value={value} />
+      <h2>Hello {value}</h2>
+    </div>
+  )
+  Rereact.render(element, container);
+}
+
+rerender("World")

@@ -4,12 +4,11 @@ This code is an implementation of React's Fiber reconciler algorithm, which is r
 
 Here is a brief overview of the code:
 
-    `createElement`: This function creates an object representing a React element given its type, props, and children. It is called by React components to create their output.
-    `createTextElement`: This is a helper function that creates a special type of React element for text nodes.
-    `createDom`: This function creates a DOM node from a Fiber object.
-    `updateDom`: This function updates a DOM node based on the props of a Fiber object.
-    `commitWork`: This function commits changes made to a Fiber tree to the actual DOM.
-    `render`: This is the entry point for rendering a React component to the DOM. It sets up the initial state of the Fiber tree and schedules the first unit of work to be performed.
-    `performUnitOfWork`: This function performs a unit of work on a Fiber object and its children, and returns the next Fiber object to be worked on.
-    `reconcileChildren`: This function reconciles the children of a Fiber object, updating or creating them as necessary.
-    `workLoop`: This is the main loop that performs units of work until the entire Fiber tree has been updated. It uses requestIdleCallback to perform work when the browser is idle.
+    createElement: a function that creates a virtual DOM element with a type, props, and children.
+    createDom: a function that creates a real DOM element based on the virtual DOM element provided.
+    updateDom: a function that updates a real DOM element with the new props.
+    commitWork: a function that updates or adds real DOM elements to the document.
+    render: a function that initiates the update process.
+    performUnitOfWork: a function that performs a unit of work on a fiber (a virtual DOM node).
+    updateFunctionComponent: a function that updates a fiber representing a function component and its children.
+    useState: a function that creates a state hook for function components.

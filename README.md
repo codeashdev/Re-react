@@ -1,6 +1,6 @@
 Rereact
 
-This code is an implementation of React's Fiber reconciler algorithm, which is responsible for rendering React components to the DOM. The code defines a series of functions that work together to create a virtual representation of the UI called a Fiber tree and then manipulate the DOM to reflect changes in the Fiber tree.
+The code uses a reconciliation algorithm to update the virtual DOM and a work loop to perform the updates. It also uses a fiber tree to represent the virtual DOM, with each fiber node containing information about its type, props, children, and the real DOM node it represents.
 
 Here is a brief overview of the code:
 
@@ -12,3 +12,5 @@ Here is a brief overview of the code:
     performUnitOfWork: a function that performs a unit of work on a fiber (a virtual DOM node).
     updateFunctionComponent: a function that updates a fiber representing a function component and its children.
     useState: a function that creates a state hook for function components.
+
+Overall, the code is a simplified version of React's core functionality, providing a basic understanding of how React works under the hood.

@@ -17,32 +17,36 @@ export const updateDom = (dom, prevProps, nextProps) => {
     // Remove old properties by looping through each property in the previous props 
     // object and setting the corresponding property on the DOM element to an empty string if it has been removed.
     Object.keys(prevProps)
-      .filter(isProperty)
-      .filter(isGone(prevProps, nextProps))
+      .filter(isEvent)
+      .filter(key => !(key in nextProps) || isNew(prevProps, nextProps)(key))
       .forEach(name => {
-        dom[name] = ""
-      })
+        const eventType = name.toLowerCase().substring(2);
+        dom.removeEventListener(eventType, prevProps[name]);
+      });
   
+   // Remove old properties
+   Object.keys(prevProps)
+   .filter(isProperty)
+   .filter(isGone(prevProps, nextProps))
+   .forEach(name => {
+     dom[name] = "";
+   });
+
     // Set new or changed properties by looping through each property in the next props object
     //  and setting the corresponding property on the DOM element if it is new or has changed.
     Object.keys(nextProps)
-      .filter(isProperty)
-      .filter(isNew(prevProps, nextProps))
-      .forEach(name => {
-        dom[name] = nextProps[name]
-      })
+    .filter(isProperty)
+    .filter(isNew(prevProps, nextProps))
+    .forEach(name => {
+      dom[name] = nextProps[name];
+    });
   
     // Add event listeners by looping through each property in the next props object that starts with "on" and adding an event listener for that type of event.
     Object.keys(nextProps)
       .filter(isEvent)
       .filter(isNew(prevProps, nextProps))
       .forEach(name => {
-        const eventType = name
-          .toLowerCase()
-          .substring(2)
-        dom.addEventListener(
-          eventType,
-          nextProps[name]
-        )
-      })
+        const eventType = name.toLowerCase().substring(2);
+        dom.addEventListener(eventType, nextProps[name]);
+      });
   }

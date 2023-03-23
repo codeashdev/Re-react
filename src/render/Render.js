@@ -11,41 +11,46 @@ const commitRoot = () => {
     // Reset the work-in-progress root to null.
     wipRoot = null
   }
-/*This function recursively commits the changes made to the DOM by looping through
-    each fiber and appending, updating, or deleting the corresponding DOM element as necessary.*/
+// This function recursively commits the changes made to the DOM by looping through
+// each fiber and appending, updating, or deleting the corresponding DOM element as necessary.
 const commitWork = (fiber) => {
-      // If there is no fiber, return.
-      if (!fiber) {
-        return
-      }
-      // Get the parent DOM element of the fiber.
-      const domParent = fiber.parent.dom
-      // If the fiber's effect tag is PLACEMENT and the fiber has a DOM element,
-      //  append the DOM element to the parent DOM element.
-      if (
-        fiber.effectTag === "PLACEMENT" &&
-        fiber.dom != null
-      ) {
-        domParent.appendChild(fiber.dom)
-      // If the fiber's effect tag is UPDATE and the fiber has a DOM element,
-      //  update the DOM element's properties using the updateDom function.
-      } else if (
-        fiber.effectTag === "UPDATE" &&
-        fiber.dom != null
-      ) {
-        updateDom(
-          fiber.dom,
-          fiber.alternate.props,
-          fiber.props
-        )
-      // If the fiber's effect tag is DELETION, remove the DOM element from the parent DOM element.
-      } else if (fiber.effectTag === "DELETION") {
-        domParent.removeChild(fiber.dom)
-      }
-      // Recursively commit the changes to the child fibers and sibling fibers.
-      commitWork(fiber.child)
-      commitWork(fiber.sibling)
-    }
+  if (!fiber) { // if there is no fiber to commit, return
+    return;
+  }
+  // find the nearest parent fiber with a DOM node
+  let domParentFiber = fiber.parent;
+  while (!domParentFiber.dom) {
+    domParentFiber = domParentFiber.parent;
+  }
+  // get the DOM node of the parent fiber
+  const domParent = domParentFiber.dom;
+  // perform different actions based on the effect tag of the fiber
+  if (fiber.effectTag === "PLACEMENT" && fiber.dom != null) {
+    // if the fiber was newly added to the tree, append its DOM node to the parent DOM node
+    domParent.appendChild(fiber.dom);
+  } else if (fiber.effectTag === "UPDATE" && fiber.dom != null) {
+    // if the fiber was updated, update its corresponding DOM node with the new props
+    updateDom(fiber.dom, fiber.alternate.props, fiber.props);
+  } else if (fiber.effectTag === "DELETION") {
+    // if the fiber was deleted, remove its corresponding DOM node from the parent DOM node
+    commitDeletion(fiber, domParent);
+  }
+  // recursively commit the child and sibling fibers
+  commitWork(fiber.child);
+  commitWork(fiber.sibling);
+}
+
+// This function recursively deletes the DOM nodes of a fiber and its children
+const commitDeletion = (fiber, domParent) => {
+  if (fiber.dom) {
+    // if the fiber has a DOM node, remove it from the parent DOM node
+    domParent.removeChild(fiber.dom);
+  } else {
+    // if the fiber has no DOM node, recursively delete the DOM nodes of its children
+    commitDeletion(fiber.child, domParent);
+  }
+}
+
 /* This function renders the given element to the given container
     by setting the work-in-progress root to an object with the container as its DOM element, the element as its child,
     and the current root as its alternate. It also initializes the deletions array and sets the next unit of work to the work-in-progress root.*/
@@ -96,27 +101,91 @@ const workLoop = (deadline) => {
 // to check how much time until the browser needs to take control again
 requestIdleCallback(workLoop)
 
+// This function performs the work on a fiber, updating the DOM or calling the function component
+// to get the children that will be added to the component tree.
 const performUnitOfWork = (fiber) => {
-  //keep track of the DOM node in the fiber.dom property  
-    if (!fiber.dom) {
-      fiber.dom = createDom(fiber)
-    }
-  // for each child create a new fiber
-    const elements = fiber.props.children
-    reconcileChildren(fiber, elements)
-  //search for the next unit of work. We first try with the child,
-  //then with the sibling, then with the uncle, and so on
-    if (fiber.child) {
-      return fiber.child
-    }
-    let nextFiber = fiber
-    while (nextFiber) {
-      if (nextFiber.sibling) {
-        return nextFiber.sibling
-      }
-      nextFiber = nextFiber.parent
-    }
+  const isFunctionComponent = fiber.type instanceof Function;
+  if (isFunctionComponent) {
+    updateFunctionComponent(fiber); // update the function component
+  } else {
+    updateHostComponent(fiber); // update the host component (e.g. <div>, <span>, etc.)
   }
+  if (fiber.child) {
+    return fiber.child; // if the fiber has a child, return the child to continue performing work on it
+  }
+  let nextFiber = fiber;
+  while (nextFiber) {
+    if (nextFiber.sibling) {
+      return nextFiber.sibling; // if the fiber has a sibling, return the sibling to continue performing work on it
+    }
+    nextFiber = nextFiber.parent; // if the fiber has no child or sibling, move up to the parent and try again
+  }
+}
+
+let wipFiber = null; // work in progress fiber
+let hookIndex = null; // index of the hook being used
+
+// This function updates a function component fiber and sets it as the work in progress fiber
+const updateFunctionComponent = (fiber) => {
+  wipFiber = fiber;
+  // Reset hook index and hooks array for the new fiber
+  hookIndex = 0;
+  wipFiber.hooks = [];
+  // Render the function component to get its children
+  const children = [fiber.type(fiber.props)];
+  // Reconcile the children of the function component with the old fiber's children
+  reconcileChildren(fiber, children);
+}
+
+
+export const useState = (initial) => {
+  // Retrieve the old hook object from the alternate fiber if it exists.
+  const oldHook =
+    wipFiber.alternate &&
+    wipFiber.alternate.hooks &&
+    wipFiber.alternate.hooks[hookIndex];
+  // Create a new hook object with initial state and an empty queue of state update actions.
+  const hook = {
+    state: oldHook ? oldHook.state : initial,
+    queue: []
+  };
+  // Apply all the state update actions in the queue to the hook state.
+  const actions = oldHook ? oldHook.queue : [];
+  actions.forEach(action => {
+    hook.state = action(hook.state);
+  });
+  // Create a function to enqueue a new state update action.
+  const setState = action => {
+    hook.queue.push(action);
+    // Reset the work-in-progress root fiber to the current root fiber,
+    // and schedule a new update by setting the next unit of work to the root fiber.
+    wipRoot = {
+      dom: currentRoot.dom,
+      props: currentRoot.props,
+      alternate: currentRoot
+    };
+    nextUnitOfWork = wipRoot;
+    deletions = [];
+  };
+  // Add the new hook object to the work-in-progress fiber's array of hooks,
+  // and increment the hook index for the next useState call.
+  wipFiber.hooks.push(hook);
+  hookIndex++;
+
+  // Return the current state value and the setState function to the component.
+  return [hook.state, setState];
+};
+
+const updateHostComponent = (fiber) => {
+  // If the current fiber does not have a corresponding DOM node, create one
+  if (!fiber.dom) {
+    fiber.dom = createDom(fiber);
+  }
+  // Reconcile children fibers with the DOM node of the current fiber
+  reconcileChildren(fiber, fiber.props.children);
+}
+
+
 //reconcile the old fibers with the new elements
 const reconcileChildren = (wipFiber, elements) => {
   let index = 0

@@ -13,7 +13,7 @@
   const isGone = (prev, next) => key => !(key in next)
   
   // This function updates a DOM element with new props by removing old props, setting new or changed props, and adding event listeners.
-const updateDom = (dom, prevProps, nextProps) => {
+export const updateDom = (dom, prevProps, nextProps) => {
     // Remove old properties by looping through each property in the previous props 
     // object and setting the corresponding property on the DOM element to an empty string if it has been removed.
     Object.keys(prevProps)
@@ -46,5 +46,3 @@ const updateDom = (dom, prevProps, nextProps) => {
         )
       })
   }
-
-  export default updateDom;

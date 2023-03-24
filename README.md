@@ -1,4 +1,4 @@
-Rereact
+# Rereact
 
 The code uses a reconciliation algorithm to update the virtual DOM and a work loop to perform the updates. It also uses a fiber tree to represent the virtual DOM, with each fiber node containing information about its type, props, children, and the real DOM node it represents.
 
